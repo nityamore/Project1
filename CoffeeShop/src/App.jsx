@@ -1,11 +1,30 @@
 ﻿import React, { useState } from 'react';
 
 const App = () => {
-  // --- React State ---
+  // --- Authentication State ---
+  const [user, setUser] = useState(null); // null = logged out, {name} = logged in
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+
+  // --- App Logic State ---
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [notification, setNotification] = useState("");
-  const [selectedBlog, setSelectedBlog] = useState(null); // State for Blog Modal
+  const [selectedBlog, setSelectedBlog] = useState(null);
+
+  // --- Auth Handlers ---
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (loginData.username && loginData.password) {
+      setUser({ name: loginData.username });
+      showNotification(`Welcome back, ${loginData.username}!`);
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setCart([]); // Clear cart on logout
+    showNotification("Logged out successfully.");
+  };
 
   // --- Storage Logic ---
   const addToCart = (name, price) => {
@@ -50,6 +69,93 @@ const App = () => {
     }
   ];
 
+  // --- LOGIN VIEW ---
+  if (!user) {
+    return (
+      <div className="auth-wrapper">
+        <style>{`
+          .auth-wrapper {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(rgba(45, 36, 30, 0.8), rgba(45, 36, 30, 0.9)), 
+                        url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1280');
+            background-size: cover;
+            background-position: center;
+            font-family: 'Lato', sans-serif;
+          }
+          .login-card {
+            background: #FAF7F2;
+            padding: 50px;
+            border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+          }
+          .login-card h2 { font-family: 'Playfair Display', serif; color: #2D241E; font-size: 32px; margin-bottom: 10px; }
+          .login-card p { opacity: 0.6; margin-bottom: 30px; font-size: 14px; }
+          .login-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            font-family: inherit;
+          }
+          .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: #2D241E;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+          }
+          .login-btn:hover { background: #C89666; }
+          .toast {
+            position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
+            background: #2D241E; color: white; padding: 15px 35px;
+            border-radius: 50px; z-index: 2000; font-weight: 700;
+            border: 1px solid #C89666;
+          }
+        `}</style>
+        {notification && <div className="toast">{notification}</div>}
+        <div className="login-card">
+          <h2>The Velvet Bean</h2>
+          <p>Sign in to your artisanal account</p>
+          <form onSubmit={handleLogin}>
+            <input 
+              type="text" 
+              placeholder="Username" 
+              className="login-input" 
+              required 
+              onChange={(e) => setLoginData({...loginData, username: e.target.value})}
+            />
+            <input 
+              type="password" 
+              placeholder="Password" 
+              className="login-input" 
+              required 
+              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+            />
+            <button type="submit" className="login-btn">Enter Roastery</button>
+          </form>
+          <div style={{marginTop: '20px', fontSize: '12px', opacity: 0.5}}>
+            Forgot your password? <span style={{textDecoration: 'underline', cursor: 'pointer'}}>Recover here.</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- MAIN APP VIEW ---
   return (
     <div className="app-root">
       <style>{`
@@ -93,6 +199,7 @@ const App = () => {
           display: flex;
           gap: 20px;
           z-index: 100;
+          align-items: center;
         }
         .top-nav a {
           text-decoration: none;
@@ -103,7 +210,10 @@ const App = () => {
           letter-spacing: 1px;
           transition: color 0.3s;
         }
-        .top-nav a:hover { color: var(--espresso); }
+        .logout-link {
+          color: #ff4444 !important;
+          cursor: pointer;
+        }
 
         section { padding: 80px 0 40px; }
 
@@ -250,17 +360,6 @@ const App = () => {
         }
         .blog-modal img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; }
 
-        /* Contact */
-        .contact-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 60px;
-        }
-        .contact-form input, .contact-form textarea {
-            width: 100%; padding: 18px; margin-bottom: 20px;
-            border: 1px solid #ddd; border-radius: 6px; background: #fff;
-        }
-
         /* BLEND circular trigger */
         .cart-float {
           position: fixed; bottom: 35px; right: 35px;
@@ -297,7 +396,7 @@ const App = () => {
 
       {notification && <div className="toast">{notification}</div>}
 
-      {/* Blog Modal Overlay */}
+      {/* Blog Modal */}
       {selectedBlog && (
         <div className="blog-modal-overlay" onClick={() => setSelectedBlog(null)}>
           <div className="blog-modal" onClick={e => e.stopPropagation()}>
@@ -313,7 +412,7 @@ const App = () => {
         </div>
       )}
 
-      {/* Floating Cart Trigger */}
+      {/* BLEND circular trigger */}
       <div className="cart-float" onClick={toggleCart}>
         <span>BLEND</span>
         {cart.length > 0 && (
@@ -364,6 +463,7 @@ const App = () => {
           <a href="#menu">Menu</a>
           <a href="#blogs">Blogs</a>
           <a href="#contact">Contact</a>
+          <a onClick={handleLogout} className="logout-link">Logout</a>
         </div>
 
         <div className="home-hero" id="home">
@@ -415,7 +515,6 @@ const App = () => {
           </div>
         </section>
 
-        {/* BLOGS SECTION - UPDATED WITH INTERACTIVE READ MORE */}
         <section id="blogs">
             <h2 className="section-title">Latest Blogs</h2>
             <div className="grid">
@@ -440,21 +539,10 @@ const App = () => {
         <section id="contact">
             <h2 className="section-title">Get In Touch</h2>
             <div className="contact-container">
-                <div className="contact-info">
-                    <div>
-                        <h4 style={{fontFamily: 'Playfair Display', color: 'var(--crema)'}}>Roastery Location</h4>
-                        <p style={{opacity:0.7}}>123 Espresso Lane, Beanville, CA 90210</p>
-                    </div>
-                    <div>
-                        <h4 style={{fontFamily: 'Playfair Display', color: 'var(--crema)'}}>Contact Details</h4>
-                        <p style={{opacity:0.7}}>hello@velvetbean.com</p>
-                        <p style={{opacity:0.7}}>+1 (555) 123-4567</p>
-                    </div>
-                </div>
                 <form className="contact-form" onSubmit={(e) => { e.preventDefault(); showNotification("Message Sent!"); }}>
-                    <input type="text" placeholder="Full Name" required />
-                    <input type="email" placeholder="Email Address" required />
-                    <textarea placeholder="Your Message" rows="6" required></textarea>
+                    <input type="text" placeholder="Full Name" className="login-input" required />
+                    <input type="email" placeholder="Email Address" className="login-input" required />
+                    <textarea placeholder="Your Message" rows="6" className="login-input" style={{resize: 'none'}} required></textarea>
                     <button className="btn-add" style={{width: '100%', padding: '18px'}}>Send Message</button>
                 </form>
             </div>
@@ -496,15 +584,7 @@ const App = () => {
 
 const MenuItem = ({ name, price, img, onAdd }) => (
   <div className="tile" onClick={() => onAdd(name, price)}>
-    <img 
-      src={img} 
-      alt={name} 
-      className="tile-img" 
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600';
-      }}
-    />
+    <img src={img} alt={name} className="tile-img" />
     <h3 style={{fontSize: '22px', fontWeight: '700', marginTop: '10px'}}>{name}</h3>
     <div className="price-tag">₹{price}</div>
     <div className="btn-add">Select Blend</div>
