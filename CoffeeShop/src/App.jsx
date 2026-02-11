@@ -10,10 +10,23 @@ const App = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [notification, setNotification] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
+  const [infoItem, setInfoItem] = useState(null); 
+
+  // --- Contact Form State ---
+  const [contactData, setContactData] = useState({ name: '', email: '', message: '' });
 
   // --- Auth Handlers ---
   const handleLogin = (e) => {
     e.preventDefault();
+    
+    // Validation: Username only in letters
+    const usernameRegex = /^[a-zA-Z]+$/;
+    
+    if (!usernameRegex.test(loginData.username)) {
+      showNotification("Username must contain letters only.");
+      return;
+    }
+
     if (loginData.username && loginData.password) {
       setUser({ name: loginData.username });
       showNotification(`Welcome back, ${loginData.username}!`);
@@ -22,8 +35,15 @@ const App = () => {
 
   const handleLogout = () => {
     setUser(null);
-    setCart([]); // Clear cart on logout
+    setCart([]); 
     showNotification("Logged out successfully.");
+  };
+
+  // --- Contact Handler ---
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    showNotification("Thank you! Your message has been sent.");
+    setContactData({ name: '', email: '', message: '' }); // Clear form
   };
 
   // --- Storage Logic ---
@@ -46,7 +66,7 @@ const App = () => {
 
   const showNotification = (msg) => {
     setNotification(msg);
-    setTimeout(() => setNotification(""), 2000);
+    setTimeout(() => setNotification(""), 3000);
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
@@ -57,14 +77,14 @@ const App = () => {
       id: 1,
       title: "The Art of Micro-foam",
       summary: "Discover how we achieve that signature velvet texture in every cup.",
-      image: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&q=80&w=500",
+      image: "https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&q=80&w=600",
       content: "Achieving the perfect velvet micro-foam requires extreme precision. We start with high-quality milk chilled to exactly 4°C, introducing air early in the steaming process to create microscopic bubbles. By transitioning into a high-speed whirlpool vortex, we integrate that air fully, resulting in a glossy, paint-like consistency that perfectly complements our dark roasts."
     },
     {
       id: 2,
       title: "Sustainability at Source",
       summary: "A deep dive into our ethical sourcing practices across the globe.",
-      image: "https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=500",
+      image: "https://images.unsplash.com/photo-1498804103079-a6351b050096?auto=format&fit=crop&q=80&w=600",
       content: "Sustainability is the heart of our roastery. We bypass industrial supply chains to work directly with single-origin farms. This direct-trade model ensures that farmers receive premium pay far above fair-trade minimums. By investing in these local communities, we support biodiversity and traditional harvesting methods that preserve the unique floral notes of every bean we source."
     }
   ];
@@ -97,25 +117,16 @@ const App = () => {
           .login-card h2 { font-family: 'Playfair Display', serif; color: #2D241E; font-size: 32px; margin-bottom: 10px; }
           .login-card p { opacity: 0.6; margin-bottom: 30px; font-size: 14px; }
           .login-input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: white;
-            font-family: inherit;
+            width: 100%; padding: 15px; margin-bottom: 15px;
+            border: 1px solid #ddd; border-radius: 8px;
+            background: white; font-family: inherit;
           }
           .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: #2D241E;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width: 100%; padding: 15px;
+            background: #2D241E; color: white;
+            border: none; border-radius: 8px;
+            font-weight: 700; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 1px;
             transition: background 0.3s;
           }
           .login-btn:hover { background: #C89666; }
@@ -133,8 +144,9 @@ const App = () => {
           <form onSubmit={handleLogin}>
             <input 
               type="text" 
-              placeholder="Username" 
+              placeholder="Username (Letters only)" 
               className="login-input" 
+              value={loginData.username}
               required 
               onChange={(e) => setLoginData({...loginData, username: e.target.value})}
             />
@@ -142,6 +154,7 @@ const App = () => {
               type="password" 
               placeholder="Password" 
               className="login-input" 
+              value={loginData.password}
               required 
               onChange={(e) => setLoginData({...loginData, password: e.target.value})}
             />
@@ -193,172 +206,119 @@ const App = () => {
 
         /* Nav */
         .top-nav {
-          position: absolute;
-          top: 30px;
-          right: 40px;
-          display: flex;
-          gap: 20px;
-          z-index: 100;
-          align-items: center;
+          position: absolute; top: 30px; right: 40px;
+          display: flex; gap: 20px; z-index: 100; align-items: center;
         }
         .top-nav a {
-          text-decoration: none;
-          color: var(--crema);
-          font-size: 11px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          transition: color 0.3s;
+          text-decoration: none; color: var(--crema);
+          font-size: 11px; font-weight: 700; text-transform: uppercase;
+          letter-spacing: 1px; transition: color 0.3s;
         }
-        .logout-link {
-          color: #ff4444 !important;
-          cursor: pointer;
-        }
+        .logout-link { color: #ff4444 !important; cursor: pointer; }
 
         section { padding: 80px 0 40px; }
 
         .section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 44px;
-          margin-bottom: 40px;
-          border-left: 6px solid var(--crema);
-          padding-left: 20px;
-          color: var(--espresso);
+          font-family: 'Playfair Display', serif; font-size: 44px;
+          margin-bottom: 40px; border-left: 6px solid var(--crema);
+          padding-left: 20px; color: var(--espresso);
         }
 
         /* Hero */
         .home-hero {
-          height: 600px;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          border-radius: 8px;
-          overflow: hidden;
+          height: 600px; position: relative;
+          display: flex; align-items: center; justify-content: center;
+          text-align: center; border-radius: 8px; overflow: hidden;
           background: linear-gradient(rgba(45, 36, 30, 0.7), rgba(45, 36, 30, 0.8)), 
                       url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1280');
-          background-size: cover;
-          background-position: center;
-          color: var(--cream);
-          margin-bottom: 20px;
+          background-size: cover; background-position: center;
+          color: var(--cream); margin-bottom: 20px;
         }
 
         .home-hero h1 {
-          font-size: clamp(3rem, 8vw, 6rem);
-          font-family: 'Playfair Display', serif;
-          margin-bottom: 10px;
-          text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          font-size: clamp(3rem, 8vw, 6rem); font-family: 'Playfair Display', serif;
+          margin-bottom: 10px; text-shadow: 0 4px 20px rgba(0,0,0,0.5);
         }
 
         /* About Section */
-        .about-flex {
-            display: flex;
-            gap: 60px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .about-flex { display: flex; gap: 60px; align-items: center; flex-wrap: wrap; }
         .about-text { flex: 1.2; min-width: 300px; }
-        
         .about-img-single { 
-            flex: 0.8; 
-            min-width: 300px; 
-            height: 450px; 
-            object-fit: cover; 
-            border-radius: 12px; 
-            box-shadow: 15px 15px 0 var(--crema);
+            flex: 0.8; min-width: 300px; height: 450px; 
+            object-fit: cover; border-radius: 12px; box-shadow: 15px 15px 0 var(--crema);
         }
 
         /* Menu Grid */
         .menu-category-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 28px;
-          margin: 40px 0 25px;
-          color: var(--crema);
-          border-bottom: 1px solid #eee;
-          padding-bottom: 10px;
+          font-family: 'Playfair Display', serif; font-size: 28px;
+          margin: 40px 0 25px; color: var(--crema);
+          border-bottom: 1px solid #eee; padding-bottom: 10px;
         }
 
         .grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 30px;
-          margin-bottom: 60px;
+          display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 30px; margin-bottom: 60px;
         }
 
         .tile {
-          background: white;
-          padding: 20px;
-          border-radius: 12px;
+          background: white; padding: 20px; border-radius: 12px;
           box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-          display: flex;
-          flex-direction: column;
-          transition: all 0.3s ease;
-          border: 1px solid transparent;
-          cursor: pointer;
+          display: flex; flex-direction: column;
+          transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer;
         }
         .tile:hover { transform: translateY(-8px); border-color: var(--crema); }
 
         .tile-img {
-          width: 100%;
-          height: 220px;
-          object-fit: cover;
-          border-radius: 8px;
-          margin-bottom: 15px;
-          background-color: #eee;
+          width: 100%; height: 220px; object-fit: cover;
+          border-radius: 8px; margin-bottom: 15px; background-color: #eee;
         }
 
         .price-tag { font-size: 20px; font-weight: 800; color: var(--crema); margin: 10px 0; }
 
         .btn-add {
-          background: var(--espresso);
-          color: white;
-          border: none;
-          padding: 12px;
-          border-radius: 6px;
-          font-weight: 700;
-          text-transform: uppercase;
-          font-size: 11px;
-          text-align: center;
+          background: var(--espresso); color: white; border: none;
+          padding: 12px; border-radius: 6px; font-weight: 700;
+          text-transform: uppercase; font-size: 11px; text-align: center;
         }
 
-        /* Blogs */
+        /* Blogs - Resized Blog Cards */
         .blog-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
+            background: white; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s ease;
+            max-width: 420px; /* Resize: smaller card width */
+            margin: 0 auto;
         }
         .blog-card:hover { transform: scale(1.02); }
-        .blog-img { width: 100%; height: 220px; object-fit: cover; }
+        .blog-img { width: 100%; height: 180px; object-fit: cover; } /* Resize: smaller image height */
         .blog-content { padding: 25px; }
-        .blog-content h4 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 12px; }
-        .blog-content p { font-size: 14px; opacity: 0.7; line-height: 1.6; margin-bottom: 20px; }
+        .blog-content h4 { font-family: 'Playfair Display', serif; font-size: 18px; margin-bottom: 12px; }
+        .blog-content p { font-size: 13px; opacity: 0.7; line-height: 1.6; margin-bottom: 20px; }
 
-        /* Blog Modal */
-        .blog-modal-overlay {
-          position: fixed;
-          top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.8);
-          z-index: 3000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
+        /* Generic Modal */
+        .modal-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.8); z-index: 3000;
+          display: flex; align-items: center; justify-content: center; padding: 20px;
         }
-        .blog-modal {
-          background: var(--paper);
-          max-width: 600px;
-          width: 100%;
-          max-height: 90vh;
-          overflow-y: auto;
-          border-radius: 12px;
-          position: relative;
-          padding: 40px;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        .modal-card {
+          background: var(--paper); max-width: 500px; width: 100%;
+          max-height: 90vh; overflow-y: auto; border-radius: 12px;
+          position: relative; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+          text-align: center;
         }
-        .blog-modal img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; }
+        .modal-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; }
+
+        /* Contact Section Wrapper */
+        .contact-wrapper {
+          max-width: 800px;
+          margin: 0 auto;
+          background: white;
+          padding: 60px;
+          border-radius: 20px;
+          box-shadow: 0 15px 50px rgba(45, 36, 30, 0.05);
+        }
+        .form-group { margin-bottom: 25px; text-align: left; }
+        .form-group label { display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; color: var(--crema); margin-bottom: 8px; letter-spacing: 1px; }
 
         /* BLEND circular trigger */
         .cart-float {
@@ -396,18 +356,24 @@ const App = () => {
 
       {notification && <div className="toast">{notification}</div>}
 
-      {/* Blog Modal */}
-      {selectedBlog && (
-        <div className="blog-modal-overlay" onClick={() => setSelectedBlog(null)}>
-          <div className="blog-modal" onClick={e => e.stopPropagation()}>
+      {/* Blog/Info Modal Logic */}
+      {(selectedBlog || infoItem) && (
+        <div className="modal-overlay" onClick={() => { setSelectedBlog(null); setInfoItem(null); }}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
             <button 
-              onClick={() => setSelectedBlog(null)} 
+              onClick={() => { setSelectedBlog(null); setInfoItem(null); }} 
               style={{position:'absolute', top:'20px', right:'20px', border:'none', background:'none', cursor:'pointer', fontSize:'24px'}}
             >✕</button>
-            <img src={selectedBlog.image} alt={selectedBlog.title} />
-            <h2 style={{fontFamily: 'Playfair Display', marginBottom: '15px'}}>{selectedBlog.title}</h2>
-            <p style={{lineHeight: '1.8', opacity: 0.8}}>{selectedBlog.content}</p>
-            <button className="btn-add" style={{marginTop: '30px', padding: '12px 25px'}} onClick={() => setSelectedBlog(null)}>Close Reader</button>
+            <img 
+              src={selectedBlog?.image || infoItem?.img} 
+              alt="Artisanal View" 
+              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }} 
+            />
+            <h2 style={{fontFamily: 'Playfair Display', marginBottom: '15px'}}>{selectedBlog?.title || infoItem?.name}</h2>
+            <p style={{lineHeight: '1.8', opacity: 0.8}}>
+              {selectedBlog?.content || infoItem?.description}
+            </p>
+            <button className="btn-add" style={{marginTop: '30px', padding: '12px 25px'}} onClick={() => { setSelectedBlog(null); setInfoItem(null); }}>Close Window</button>
           </div>
         </div>
       )}
@@ -420,7 +386,7 @@ const App = () => {
             position:'absolute', top:'-2px', right:'-2px', 
             background:'var(--crema)', color:'white',
             width:'26px', height:'26px', borderRadius:'50%', 
-            fontSize:'12px', display:'flex', alignItems:'center', justifyContent:'center',
+            fontSize:'12px', display:'flex', alignItems:'center', justifySelf:'center',
             border: '2px solid var(--espresso)', fontWeight: '900'
           }}>
             {cart.length}
@@ -470,7 +436,8 @@ const App = () => {
           <div>
             <p style={{textTransform: 'uppercase', letterSpacing: '8px', fontWeight: '700', color: 'var(--crema)', marginBottom: '10px'}}>Est. 2024</p>
             <h1>The Velvet Bean</h1>
-            <p style={{fontSize: '24px', maxWidth: '650px', margin: '0 auto', fontWeight: '300'}}>Artisanal roasts and balanced micro-foam.</p>
+            {/* Tagline restored to original version */}
+            <p style={{fontSize: '24px', maxWidth: '650px', margin: '0 auto', fontWeight: '300'}}>Artisanal dark roasts meeting the silky comfort of beige micro-foam.</p>
           </div>
         </div>
 
@@ -485,42 +452,93 @@ const App = () => {
                         Founded in 2024, our roastery ensures that every cup served is sustainable, fresh, and uniquely textured.
                     </p>
                 </div>
-                <img className="about-img-single" src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&q=80&w=1000" alt="Coffee Cup resting on Fresh Beans" />
+                <img 
+                    className="about-img-single" 
+                    src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&q=80&w=1000" 
+                    alt="Coffee Cup resting on Fresh Beans" 
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000'; }}
+                />
             </div>
         </section>
 
         <section id="menu">
           <h2 className="section-title">The Menu</h2>
+          <p style={{textAlign: 'center', opacity: 0.5, marginBottom: '20px'}}>Click on any item to view its origin and craftsmanship.</p>
           
           <h3 className="menu-category-title">Espresso Classics</h3>
           <div className="grid">
-            <MenuItem name="Espresso Latte" price={340} img="https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Cappuccino" price={320} img="https://images.unsplash.com/photo-1517701550541-628d0f19c00b?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Cortado" price={300} img="https://images.unsplash.com/photo-1512568400610-62da28bc8a13?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Americano" price={280} img="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
+            <MenuItem 
+              name="Espresso Latte" price={340} img="https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600" 
+              description="A smooth harmony of double-shot espresso and velvet micro-foam milk, perfect for a balanced, sophisticated morning start." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Cappuccino" price={320} img="https://images.unsplash.com/photo-1517701550541-628d0f19c00b?q=80&w=600" 
+              description="Classic Italian proportions of rich espresso, steamed milk, and a thick, airy head of frothed milk foam for texture." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Cortado" price={300} img="https://images.unsplash.com/photo-1512568400610-62da28bc8a13?q=80&w=600" 
+              description="Equal parts espresso and warm milk to reduce acidity while maintaining the bold, intense heart of the artisanal bean." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Americano" price={280} img="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600" 
+              description="Double espresso diluted with hot water, preserving the bean's complex flavor profile with a lighter and cleaner body profile." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
           </div>
 
           <h3 className="menu-category-title">Cold Beverages</h3>
           <div className="grid">
-            <MenuItem name="Signature Cold Brew" price={380} img="https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Nitro Cold Brew" price={420} img="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Vietnamese Iced" price={390} img="https://images.unsplash.com/photo-1544145945-f904253d0c7b?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
+            <MenuItem 
+              name="Signature Cold Brew" price={380} img="https://images.unsplash.com/photo-1517701604599-bb29b565090c?q=80&w=600" 
+              description="Slow-steeped for eighteen hours to extract maximum flavor with minimal acidity for a refreshing, bold and smooth finish." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Nitro Cold Brew" price={420} img="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=600" 
+              description="Infused with nitrogen to create a silky, stout-like texture and a beautiful cascading crema effect in every chilled glass." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Vietnamese Iced" price={390} img="https://images.unsplash.com/photo-1553909489-087c0057adec?q=80&w=600&auto=format&fit=crop" 
+              description="Bold dark roast filtered through traditional phin, sweetened with rich condensed milk over a bed of slow-melting ice." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
           </div>
 
           <h3 className="menu-category-title">Matcha & Mojito</h3>
           <div className="grid">
-            <MenuItem name="Strawberry Matcha" price={495} img="https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Mint Mojito" price={380} img="https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=500" onAdd={addToCart} />
-            <MenuItem name="Matcha Frappé" price={480} img="https://images.unsplash.com/photo-1536496070240-2a7fbda4c97f?auto=format&fit=crop&q=80&w=600" onAdd={addToCart} />
+            <MenuItem 
+              name="Strawberry Matcha" price={495} img="https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=600" 
+              description="Premium grade matcha layered with fresh strawberry purée and chilled milk for a vibrant, fruity antioxidant health boost." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Mint Mojito" price={380} img="https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=600" 
+              description="Muddled fresh mint and lime combined with chilled espresso and sparkling water for an energizing, alcohol-free artisanal refresher." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
+            <MenuItem 
+              name="Matcha Cloud Latte" price={480} img="https://images.unsplash.com/photo-1534706936160-d5ee67737249?auto=format&fit=crop&q=80&w=600" 
+              description="Whisked ceremonial matcha topped with a light-as-air cold foam cloud, creating a serene and creamy sensory texture." 
+              onAdd={addToCart} onInfo={setInfoItem} 
+            />
           </div>
         </section>
 
         <section id="blogs">
             <h2 className="section-title">Latest Blogs</h2>
-            <div className="grid">
+            <div className="grid" style={{maxWidth: '1000px', margin: '0 auto 60px'}}>
                 {blogs.map(blog => (
                   <div className="blog-card" key={blog.id}>
-                      <img className="blog-img" src={blog.image} alt={blog.title} />
+                      <img 
+                        className="blog-img" 
+                        src={blog.image} 
+                        alt={blog.title} 
+                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }}
+                      />
                       <div className="blog-content">
                           <h4>{blog.title}</h4>
                           <p>{blog.summary}</p>
@@ -538,12 +556,45 @@ const App = () => {
 
         <section id="contact">
             <h2 className="section-title">Get In Touch</h2>
-            <div className="contact-container">
-                <form className="contact-form" onSubmit={(e) => { e.preventDefault(); showNotification("Message Sent!"); }}>
-                    <input type="text" placeholder="Full Name" className="login-input" required />
-                    <input type="email" placeholder="Email Address" className="login-input" required />
-                    <textarea placeholder="Your Message" rows="6" className="login-input" style={{resize: 'none'}} required></textarea>
-                    <button className="btn-add" style={{width: '100%', padding: '18px'}}>Send Message</button>
+            <div className="contact-wrapper">
+                <form className="contact-form" onSubmit={handleContactSubmit}>
+                    <div className="form-group">
+                      <label>Your Name</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Julian Bean" 
+                        className="login-input" 
+                        value={contactData.name}
+                        required 
+                        onChange={(e) => setContactData({...contactData, name: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Email Address</label>
+                      <input 
+                        type="email" 
+                        placeholder="e.g. hello@example.com" 
+                        className="login-input" 
+                        value={contactData.email}
+                        required 
+                        onChange={(e) => setContactData({...contactData, email: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Message</label>
+                      <textarea 
+                        placeholder="Share your thoughts with us..." 
+                        rows="6" 
+                        className="login-input" 
+                        value={contactData.message}
+                        style={{resize: 'none'}} 
+                        required 
+                        onChange={(e) => setContactData({...contactData, message: e.target.value})}
+                      ></textarea>
+                    </div>
+                    <button className="login-btn" style={{padding: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                      <i className="fa-solid fa-paper-plane"></i>
+                    </button>
                 </form>
             </div>
         </section>
@@ -582,12 +633,20 @@ const App = () => {
   );
 };
 
-const MenuItem = ({ name, price, img, onAdd }) => (
-  <div className="tile" onClick={() => onAdd(name, price)}>
-    <img src={img} alt={name} className="tile-img" />
+const MenuItem = ({ name, price, img, description, onAdd, onInfo }) => (
+  <div className="tile" onClick={() => onInfo({ name, price, img, description })}>
+    <img 
+      src={img} 
+      alt={name} 
+      className="tile-img" 
+      onError={(e) => {
+        e.target.onerror = null;
+        e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600';
+      }}
+    />
     <h3 style={{fontSize: '22px', fontWeight: '700', marginTop: '10px'}}>{name}</h3>
     <div className="price-tag">₹{price}</div>
-    <div className="btn-add">Select Blend</div>
+    <div className="btn-add" onClick={(e) => { e.stopPropagation(); onAdd(name, price); }}>Select Blend</div>
   </div>
 );
 
