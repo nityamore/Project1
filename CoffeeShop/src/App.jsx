@@ -2,15 +2,17 @@
 
 const App = () => {
   // --- Authentication State ---
-  const [user, setUser] = useState(null); // null = logged out, {name} = logged in
+  const [user, setUser] = useState(null); // null = logged out, {name: string} = logged in
   const [loginData, setLoginData] = useState({ username: '', password: '' });
 
   // --- App Logic State ---
   const [cart, setCart] = useState([]);
+  const [allOrders, setAllOrders] = useState([]); // Global session history for all users
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [notification, setNotification] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [infoItem, setInfoItem] = useState(null); 
+  const [isBillingOpen, setIsBillingOpen] = useState(false); // Billing state
 
   // --- Contact Form State ---
   const [contactData, setContactData] = useState({ name: '', email: '', message: '' });
@@ -19,11 +21,11 @@ const App = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     
-    // Validation: Username only in letters
-    const usernameRegex = /^[a-zA-Z]+$/;
+    // Validation: Username allows letters and spaces only
+    const usernameRegex = /^[a-zA-Z\s]+$/;
     
     if (!usernameRegex.test(loginData.username)) {
-      showNotification("Username must contain letters only.");
+      showNotification("Username must contain letters and spaces only.");
       return;
     }
 
@@ -36,6 +38,7 @@ const App = () => {
   const handleLogout = () => {
     setUser(null);
     setCart([]); 
+    setIsBillingOpen(false);
     showNotification("Logged out successfully.");
   };
 
@@ -43,7 +46,32 @@ const App = () => {
   const handleContactSubmit = (e) => {
     e.preventDefault();
     showNotification("Thank you! Your message has been sent.");
-    setContactData({ name: '', email: '', message: '' }); // Clear form
+    setContactData({ name: '', email: '', message: '' });
+  };
+
+  // --- Order Handler ---
+  const handleCompleteSelection = () => {
+    if (cart.length === 0) {
+      showNotification("Please select a blend first.");
+      return;
+    }
+    setIsCartOpen(false);
+    setIsBillingOpen(true);
+  };
+
+  const finalizeOrder = () => {
+    // Save order to history before clearing
+    const newOrder = {
+      username: user?.name || "Guest",
+      items: cart.map(i => i.name).join(", "),
+      total: cart.reduce((sum, item) => sum + item.price, 0),
+      timestamp: new Date().toLocaleTimeString()
+    };
+    setAllOrders([...allOrders, newOrder]);
+    
+    setCart([]);
+    setIsBillingOpen(false);
+    showNotification("Order confirmed! See you soon.");
   };
 
   // --- Storage Logic ---
@@ -95,46 +123,31 @@ const App = () => {
       <div className="auth-wrapper">
         <style>{`
           .auth-wrapper {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 100vh; display: flex; align-items: center; justify-content: center;
             background: linear-gradient(rgba(45, 36, 30, 0.8), rgba(45, 36, 30, 0.9)), 
                         url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1280');
-            background-size: cover;
-            background-position: center;
-            font-family: 'Lato', sans-serif;
+            background-size: cover; background-position: center; font-family: 'Lato', sans-serif;
           }
           .login-card {
-            background: #FAF7F2;
-            padding: 50px;
-            border-radius: 15px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
+            background: #FAF7F2; padding: 50px; border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); width: 100%; max-width: 400px; text-align: center;
           }
           .login-card h2 { font-family: 'Playfair Display', serif; color: #2D241E; font-size: 32px; margin-bottom: 10px; }
           .login-card p { opacity: 0.6; margin-bottom: 30px; font-size: 14px; }
           .login-input {
-            width: 100%; padding: 15px; margin-bottom: 15px;
-            border: 1px solid #ddd; border-radius: 8px;
-            background: white; font-family: inherit;
+            width: 100%; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd;
+            border-radius: 8px; background: white; font-family: inherit;
           }
           .login-btn {
-            width: 100%; padding: 15px;
-            background: #2D241E; color: white;
-            border: none; border-radius: 8px;
-            font-weight: 700; cursor: pointer;
-            text-transform: uppercase; letter-spacing: 1px;
-            transition: background 0.3s;
+            width: 100%; padding: 15px; background: #2D241E; color: white;
+            border: none; border-radius: 8px; font-weight: 700; cursor: pointer;
+            text-transform: uppercase; letter-spacing: 1px; transition: background 0.3s;
           }
           .login-btn:hover { background: #C89666; }
           .toast {
             position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
             background: #2D241E; color: white; padding: 15px 35px;
-            border-radius: 50px; z-index: 2000; font-weight: 700;
-            border: 1px solid #C89666;
+            border-radius: 50px; z-index: 2000; font-weight: 700; border: 1px solid #C89666;
           }
         `}</style>
         {notification && <div className="toast">{notification}</div>}
@@ -143,19 +156,13 @@ const App = () => {
           <p>Sign in to your artisanal account</p>
           <form onSubmit={handleLogin}>
             <input 
-              type="text" 
-              placeholder="Username (Letters only)" 
-              className="login-input" 
-              value={loginData.username}
-              required 
+              type="text" placeholder="Username (Letters & spaces)" className="login-input" 
+              value={loginData.username} required 
               onChange={(e) => setLoginData({...loginData, username: e.target.value})}
             />
             <input 
-              type="password" 
-              placeholder="Password" 
-              className="login-input" 
-              value={loginData.password}
-              required 
+              type="password" placeholder="Password" className="login-input" 
+              value={loginData.password} required 
               onChange={(e) => setLoginData({...loginData, password: e.target.value})}
             />
             <button type="submit" className="login-btn">Enter Roastery</button>
@@ -190,145 +197,106 @@ const App = () => {
         }
 
         .slide-container {
-          width: 95vw;
-          max-width: 1280px;
-          height: auto;
-          background-color: var(--paper);
-          margin: 40px auto;
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          padding: 80px 40px 40px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-          border-radius: 12px;
-          overflow: hidden;
+          width: 95vw; max-width: 1280px; height: auto; background-color: var(--paper);
+          margin: 40px auto; position: relative; display: flex; flex-direction: column;
+          padding: 80px 40px 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); border-radius: 12px;
         }
 
-        /* Nav */
         .top-nav {
           position: absolute; top: 30px; right: 40px;
           display: flex; gap: 20px; z-index: 100; align-items: center;
         }
         .top-nav a {
-          text-decoration: none; color: var(--crema);
-          font-size: 11px; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 1px; transition: color 0.3s;
+          text-decoration: none; color: var(--crema); font-size: 11px; font-weight: 700;
+          text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s;
         }
         .logout-link { color: #ff4444 !important; cursor: pointer; }
 
-        section { padding: 80px 0 40px; }
+        .user-identity {
+          position: absolute; top: 30px; left: 40px;
+          display: flex; align-items: center; gap: 10px;
+          color: var(--espresso); font-weight: 700; font-size: 12px;
+          text-transform: uppercase; letter-spacing: 1px;
+        }
+        .user-identity span { color: var(--crema); }
 
+        section { padding: 80px 0 40px; }
         .section-title {
           font-family: 'Playfair Display', serif; font-size: 44px;
           margin-bottom: 40px; border-left: 6px solid var(--crema);
           padding-left: 20px; color: var(--espresso);
         }
 
-        /* Hero */
         .home-hero {
-          height: 600px; position: relative;
-          display: flex; align-items: center; justify-content: center;
+          height: 600px; position: relative; display: flex; align-items: center; justify-content: center;
           text-align: center; border-radius: 8px; overflow: hidden;
           background: linear-gradient(rgba(45, 36, 30, 0.7), rgba(45, 36, 30, 0.8)), 
                       url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1280');
-          background-size: cover; background-position: center;
-          color: var(--cream); margin-bottom: 20px;
+          background-size: cover; background-position: center; color: var(--cream); margin-bottom: 20px;
         }
 
-        .home-hero h1 {
-          font-size: clamp(3rem, 8vw, 6rem); font-family: 'Playfair Display', serif;
-          margin-bottom: 10px; text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-        }
+        .home-hero h1 { font-size: clamp(3rem, 8vw, 6rem); font-family: 'Playfair Display', serif; text-shadow: 0 4px 20px rgba(0,0,0,0.5); }
 
-        /* About Section */
         .about-flex { display: flex; gap: 60px; align-items: center; flex-wrap: wrap; }
         .about-text { flex: 1.2; min-width: 300px; }
-        .about-img-single { 
-            flex: 0.8; min-width: 300px; height: 450px; 
-            object-fit: cover; border-radius: 12px; box-shadow: 15px 15px 0 var(--crema);
-        }
+        .about-img-single { flex: 0.8; min-width: 300px; height: 450px; object-fit: cover; border-radius: 12px; box-shadow: 15px 15px 0 var(--crema); }
 
-        /* Menu Grid */
-        .menu-category-title {
-          font-family: 'Playfair Display', serif; font-size: 28px;
-          margin: 40px 0 25px; color: var(--crema);
-          border-bottom: 1px solid #eee; padding-bottom: 10px;
-        }
-
-        .grid {
-          display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 30px; margin-bottom: 60px;
-        }
+        .menu-category-title { font-family: 'Playfair Display', serif; font-size: 28px; margin: 40px 0 25px; color: var(--crema); border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; margin-bottom: 60px; }
 
         .tile {
-          background: white; padding: 20px; border-radius: 12px;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-          display: flex; flex-direction: column;
-          transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer;
+          background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+          display: flex; flex-direction: column; transition: all 0.3s ease; border: 1px solid transparent; cursor: pointer;
         }
         .tile:hover { transform: translateY(-8px); border-color: var(--crema); }
-
-        .tile-img {
-          width: 100%; height: 220px; object-fit: cover;
-          border-radius: 8px; margin-bottom: 15px; background-color: #eee;
-        }
-
+        .tile-img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; background-color: #eee; }
         .price-tag { font-size: 20px; font-weight: 800; color: var(--crema); margin: 10px 0; }
+        .btn-add { background: var(--espresso); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; text-transform: uppercase; font-size: 11px; text-align: center; }
 
-        .btn-add {
-          background: var(--espresso); color: white; border: none;
-          padding: 12px; border-radius: 6px; font-weight: 700;
-          text-transform: uppercase; font-size: 11px; text-align: center;
-        }
-
-        /* Blogs - Resized Blog Cards */
-        .blog-card {
-            background: white; border-radius: 12px; overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s ease;
-            max-width: 420px; /* Resize: smaller card width */
-            margin: 0 auto;
-        }
-        .blog-card:hover { transform: scale(1.02); }
-        .blog-img { width: 100%; height: 180px; object-fit: cover; } /* Resize: smaller image height */
+        .blog-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s ease; max-width: 420px; margin: 0 auto; }
+        .blog-img { width: 100%; height: 180px; object-fit: cover; }
         .blog-content { padding: 25px; }
         .blog-content h4 { font-family: 'Playfair Display', serif; font-size: 18px; margin-bottom: 12px; }
         .blog-content p { font-size: 13px; opacity: 0.7; line-height: 1.6; margin-bottom: 20px; }
 
-        /* Generic Modal */
-        .modal-overlay {
-          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-          background: rgba(0,0,0,0.8); z-index: 3000;
-          display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-card {
-          background: var(--paper); max-width: 500px; width: 100%;
-          max-height: 90vh; overflow-y: auto; border-radius: 12px;
-          position: relative; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-          text-align: center;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .modal-card { background: var(--paper); max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; border-radius: 12px; position: relative; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; }
         .modal-card img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 20px; }
 
-        /* Contact Section Wrapper */
+        /* Contact Section Styles */
         .contact-wrapper {
-          max-width: 800px;
-          margin: 0 auto;
-          background: white;
-          padding: 60px;
-          border-radius: 20px;
-          box-shadow: 0 15px 50px rgba(45, 36, 30, 0.05);
+          max-width: 1050px; margin: 0 auto; background: white; padding: 80px 60px;
+          border-radius: 20px; box-shadow: 0 15px 50px rgba(45, 36, 30, 0.05);
+          text-align: center; 
         }
-        .form-group { margin-bottom: 25px; text-align: left; }
-        .form-group label { display: block; font-size: 12px; font-weight: 900; text-transform: uppercase; color: var(--crema); margin-bottom: 8px; letter-spacing: 1px; }
+        .form-group { margin-bottom: 35px; text-align: center; width: 100%; } 
+        .form-group label { display: block; font-size: 14px; font-weight: 900; text-transform: uppercase; color: var(--crema); margin-bottom: 12px; letter-spacing: 2px; }
 
-        /* BLEND circular trigger */
-        .cart-float {
-          position: fixed; bottom: 35px; right: 35px;
-          background: var(--espresso); color: white;
-          width: 80px; height: 80px; border-radius: 50%;
+        .contact-input {
+          width: 100%; max-width: 800px; padding: 18px; border: none !important; 
+          background-color: #f9f7f5; border-radius: 12px; font-family: inherit;
+          font-size: 16px; transition: all 0.3s ease; margin: 0 auto;
+        }
+        .contact-input:focus {
+          outline: none; background-color: #f0ece9; 
+          box-shadow: 0 5px 15px rgba(200, 150, 102, 0.1);
+        }
+
+        .contact-submit-btn {
+          padding: 18px 80px; background-color: var(--espresso); 
+          color: white; border: none; border-radius: 8px; cursor: pointer;
           display: flex; align-items: center; justify-content: center;
-          cursor: pointer; z-index: 1000;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-          border: 2px solid var(--crema);
+          margin: 40px auto 0; font-size: 16px; font-weight: 900;
+          text-transform: uppercase; letter-spacing: 2px;
+          transition: all 0.3s ease;
+          box-shadow: 0 10px 25px rgba(45, 36, 30, 0.3);
+        }
+        .contact-submit-btn:hover { background-color: var(--accent); transform: translateY(-2px); }
+
+        .cart-float {
+          position: fixed; bottom: 35px; right: 35px; background: var(--espresso); color: white;
+          width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid var(--crema);
           transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
         .cart-float span { font-size: 13px; font-weight: 900; letter-spacing: 1.5px; color: white; }
@@ -341,39 +309,75 @@ const App = () => {
         }
         .side-panel.open { transform: translateX(0); }
 
-        .ledger-row {
-          display: flex; justify-content: space-between;
-          padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px;
-        }
+        .ledger-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+        .toast { position: fixed; top: 25px; left: 50%; transform: translateX(-50%); background: var(--espresso); color: white; padding: 15px 35px; border-radius: 50px; z-index: 2000; font-weight: 700; border: 1px solid var(--crema); }
 
-        .toast {
-          position: fixed; top: 25px; left: 50%; transform: translateX(-50%);
-          background: var(--espresso); color: white; padding: 15px 35px;
-          border-radius: 50px; z-index: 2000; font-weight: 700;
-          border: 1px solid var(--crema);
-        }
+        .bill-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #ddd; font-size: 15px; }
+        .dine-in-badge { display: inline-block; background: var(--cream); color: var(--espresso); padding: 5px 15px; border-radius: 20px; font-weight: 700; font-size: 12px; margin-top: 15px; border: 1px solid var(--crema); }
+
+        /* Order Registry (New Section) */
+        .registry-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .registry-table th { background: var(--espresso); color: white; text-align: left; padding: 15px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+        .registry-table td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; color: var(--accent); }
+        .registry-table tr:last-child td { border-bottom: none; }
       `}</style>
 
       {notification && <div className="toast">{notification}</div>}
 
-      {/* Blog/Info Modal Logic */}
+      {/* Info/Blog Modal */}
       {(selectedBlog || infoItem) && (
         <div className="modal-overlay" onClick={() => { setSelectedBlog(null); setInfoItem(null); }}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <button 
-              onClick={() => { setSelectedBlog(null); setInfoItem(null); }} 
-              style={{position:'absolute', top:'20px', right:'20px', border:'none', background:'none', cursor:'pointer', fontSize:'24px'}}
-            >✕</button>
-            <img 
-              src={selectedBlog?.image || infoItem?.img} 
-              alt="Artisanal View" 
-              onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }} 
-            />
+            <button onClick={() => { setSelectedBlog(null); setInfoItem(null); }} style={{position:'absolute', top:'20px', right:'20px', border:'none', background:'none', cursor:'pointer', fontSize:'24px'}}>✕</button>
+            <img src={selectedBlog?.image || infoItem?.img} alt="Artisanal View" onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }} />
             <h2 style={{fontFamily: 'Playfair Display', marginBottom: '15px'}}>{selectedBlog?.title || infoItem?.name}</h2>
-            <p style={{lineHeight: '1.8', opacity: 0.8}}>
-              {selectedBlog?.content || infoItem?.description}
-            </p>
+            <p style={{lineHeight: '1.8', opacity: 0.8}}>{selectedBlog?.content || infoItem?.description}</p>
             <button className="btn-add" style={{marginTop: '30px', padding: '12px 25px'}} onClick={() => { setSelectedBlog(null); setInfoItem(null); }}>Close Window</button>
+          </div>
+        </div>
+      )}
+
+      {/* BILLING / DINE-IN MODAL */}
+      {isBillingOpen && (
+        <div className="modal-overlay">
+          <div className="modal-card" style={{maxWidth: '450px'}}>
+            <div style={{borderBottom: '2px solid var(--espresso)', paddingBottom: '20px', marginBottom: '25px'}}>
+              <h2 style={{fontFamily: 'Playfair Display', color: 'var(--crema)', fontSize: '28px'}}>Order Bill</h2>
+              <p style={{fontSize: '14px', opacity: 0.7}}>The Velvet Bean Roastery</p>
+            </div>
+            
+            <div style={{textAlign: 'left', marginBottom: '30px'}}>
+              <h4 style={{fontSize: '18px', marginBottom: '10px'}}>We're brewing for you, {user?.name}!</h4>
+              <p style={{fontSize: '15px', opacity: 0.8, lineHeight: '1.6'}}>
+                Thank you for choosing The Velvet Bean. Your artisanal selection is being prepared with care.
+              </p>
+              
+              <div className="dine-in-badge">DINE-IN SERVICE</div>
+              <p style={{fontSize: '14px', fontWeight: '900', marginTop: '10px', color: 'var(--crema)'}}>
+                <i className="fa-solid fa-clock"></i> At your table in 10 minutes
+              </p>
+            </div>
+
+            <div style={{background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #eee', marginBottom: '30px'}}>
+              {cart.map((item, idx) => (
+                <div key={idx} className="bill-item">
+                  <span>{item.name}</span>
+                  <span style={{fontWeight: '700'}}>₹{item.price}</span>
+                </div>
+              ))}
+              <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '15px', paddingTop: '15px', borderTop: '2px solid var(--espresso)', fontWeight: '900', fontSize: '20px'}}>
+                <span>Grand Total</span>
+                <span>₹{cartTotal}</span>
+              </div>
+            </div>
+
+            <button 
+              className="login-btn" 
+              style={{width: '100%', padding: '18px', backgroundColor: 'var(--espresso)', color: 'white'}} 
+              onClick={finalizeOrder}
+            >
+              Confirm & Done
+            </button>
           </div>
         </div>
       )}
@@ -383,10 +387,10 @@ const App = () => {
         <span>BLEND</span>
         {cart.length > 0 && (
           <div style={{
-            position:'absolute', top:'-2px', right:'-2px', 
+            position:'absolute', top:'0', right:'0', 
             background:'var(--crema)', color:'white',
-            width:'26px', height:'26px', borderRadius:'50%', 
-            fontSize:'12px', display:'flex', alignItems:'center', justifySelf:'center',
+            width:'28px', height:'28px', borderRadius:'50%', 
+            fontSize:'13px', display:'flex', alignItems:'center', justifyContent:'center',
             border: '2px solid var(--espresso)', fontWeight: '900'
           }}>
             {cart.length}
@@ -418,11 +422,16 @@ const App = () => {
             <span>Total</span>
             <span>₹{cartTotal}</span>
           </div>
-          <button className="btn-add" style={{width:'100%', marginTop:'20px', padding:'18px', fontSize:'14px'}}>Complete Selection</button>
+          <button className="btn-add" style={{width:'100%', marginTop:'20px', padding:'18px', fontSize:'14px'}} onClick={handleCompleteSelection}>Complete Selection</button>
         </div>
       </div>
 
       <div className="slide-container">
+        {/* User Identity Display (Top Left) */}
+        <div className="user-identity">
+          Hello, <span>{user?.name}</span>
+        </div>
+
         <div className="top-nav">
           <a href="#home">Home</a>
           <a href="#about">About</a>
@@ -436,7 +445,6 @@ const App = () => {
           <div>
             <p style={{textTransform: 'uppercase', letterSpacing: '8px', fontWeight: '700', color: 'var(--crema)', marginBottom: '10px'}}>Est. 2024</p>
             <h1>The Velvet Bean</h1>
-            {/* Tagline restored to original version */}
             <p style={{fontSize: '24px', maxWidth: '650px', margin: '0 auto', fontWeight: '300'}}>Artisanal dark roasts meeting the silky comfort of beige micro-foam.</p>
           </div>
         </div>
@@ -445,22 +453,14 @@ const App = () => {
             <h2 className="section-title">Our Story</h2>
             <div className="about-flex">
                 <div className="about-text">
-                    <p style={{fontSize: '20px', lineHeight: '1.8', marginBottom: '25px', color: 'var(--accent)'}}>
-                        At <strong>The Velvet Bean</strong>, we focus on the essence of the bean. Every selection is a custom craft, balanced between bold intensity and delicate, beige micro-foam comfort.
-                    </p>
-                    <p style={{fontSize: '17px', opacity: 0.8, lineHeight: '1.7', marginBottom: '20px'}}>
-                        Founded in 2024, our roastery ensures that every cup served is sustainable, fresh, and uniquely textured.
-                    </p>
+                    <p style={{fontSize: '20px', lineHeight: '1.8', marginBottom: '25px', color: 'var(--accent)'}}>At <strong>The Velvet Bean</strong>, we focus on the essence of the bean. Every selection is a custom craft.</p>
+                    <p style={{fontSize: '17px', opacity: 0.8, lineHeight: '1.7', marginBottom: '20px'}}>Founded in 2024, our roastery ensures that every cup served is sustainable, fresh, and uniquely textured.</p>
                 </div>
-                <img 
-                    className="about-img-single" 
-                    src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&q=80&w=1000" 
-                    alt="Coffee Cup resting on Fresh Beans" 
-                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=1000'; }}
-                />
+                <img className="about-img-single" src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&q=80&w=1000" alt="Coffee Cup" />
             </div>
         </section>
 
+        {/* MENU SECTION */}
         <section id="menu">
           <h2 className="section-title">The Menu</h2>
           <p style={{textAlign: 'center', opacity: 0.5, marginBottom: '20px'}}>Click on any item to view its origin and craftsmanship.</p>
@@ -533,21 +533,11 @@ const App = () => {
             <div className="grid" style={{maxWidth: '1000px', margin: '0 auto 60px'}}>
                 {blogs.map(blog => (
                   <div className="blog-card" key={blog.id}>
-                      <img 
-                        className="blog-img" 
-                        src={blog.image} 
-                        alt={blog.title} 
-                        onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }}
-                      />
+                      <img className="blog-img" src={blog.image} alt={blog.title} onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }} />
                       <div className="blog-content">
                           <h4>{blog.title}</h4>
                           <p>{blog.summary}</p>
-                          <button 
-                            onClick={() => setSelectedBlog(blog)}
-                            style={{color: 'var(--crema)', fontWeight: 'bold', textDecoration: 'none', border:'none', background:'none', cursor:'pointer'}}
-                          >
-                            Read More →
-                          </button>
+                          <button onClick={() => setSelectedBlog(blog)} style={{color: 'var(--crema)', fontWeight: 'bold', textDecoration: 'none', border:'none', background:'none', cursor:'pointer'}}>Read More →</button>
                       </div>
                   </div>
                 ))}
@@ -562,67 +552,75 @@ const App = () => {
                       <label>Your Name</label>
                       <input 
                         type="text" 
-                        placeholder="e.g. Julian Bean" 
-                        className="login-input" 
-                        value={contactData.name}
+                        placeholder="Julian Bean" 
+                        className="contact-input" 
+                        style={{textAlign: 'center'}} 
+                        value={contactData.name} 
                         required 
-                        onChange={(e) => setContactData({...contactData, name: e.target.value})}
+                        onChange={(e) => setContactData({...contactData, name: e.target.value})} 
                       />
                     </div>
                     <div className="form-group">
                       <label>Email Address</label>
                       <input 
                         type="email" 
-                        placeholder="e.g. hello@example.com" 
-                        className="login-input" 
-                        value={contactData.email}
+                        placeholder="hello@example.com" 
+                        className="contact-input" 
+                        style={{textAlign: 'center'}} 
+                        value={contactData.email} 
                         required 
-                        onChange={(e) => setContactData({...contactData, email: e.target.value})}
+                        onChange={(e) => setContactData({...contactData, email: e.target.value})} 
                       />
                     </div>
                     <div className="form-group">
                       <label>Message</label>
                       <textarea 
-                        placeholder="Share your thoughts with us..." 
+                        placeholder="Share your thoughts..." 
                         rows="6" 
-                        className="login-input" 
-                        value={contactData.message}
-                        style={{resize: 'none'}} 
+                        className="contact-input" 
+                        style={{resize: 'none', textAlign: 'center'}} 
+                        value={contactData.message} 
                         required 
                         onChange={(e) => setContactData({...contactData, message: e.target.value})}
                       ></textarea>
                     </div>
-                    <button className="login-btn" style={{padding: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                      <i className="fa-solid fa-paper-plane"></i>
-                    </button>
+                    <button type="submit" className="contact-submit-btn">SENT</button>
                 </form>
             </div>
         </section>
 
-        <div id="storage" style={{background: '#fdfaf7', border: '2px dashed var(--crema)', borderRadius: '12px', padding: '40px', marginTop: '80px'}}>
-          <h2 style={{fontFamily: 'Playfair Display', marginBottom: '30px', color: 'var(--espresso)'}}>Stored Blends Ledger</h2>
-          {cart.length === 0 ? <p style={{opacity:0.5, fontStyle:'italic'}}>System memory is empty. Select a blend to begin storage.</p> : (
-            <div style={{background: '#fff', padding: '30px', borderRadius: '8px', boxShadow: '0 5px 20px rgba(0,0,0,0.05)'}}>
-              <div className="ledger-row" style={{fontWeight: '900', color: 'var(--crema)', borderBottom: '2px solid var(--paper)'}}>
-                <span>BLENDED ITEM</span>
-                <span>ENTRY TIMESTAMP</span>
-                <span>UNIT PRICE</span>
-              </div>
-              {cart.map(item => (
-                <div className="ledger-row" key={item.id}>
-                  <span style={{fontWeight:'700'}}>{item.name}</span>
-                  <span style={{opacity: 0.6}}>{item.timestamp}</span>
-                  <span style={{fontWeight: '800'}}>₹{item.price}</span>
-                </div>
-              ))}
-              <div className="ledger-row" style={{borderTop: '2px solid var(--crema)', marginTop: '15px', fontWeight: '900', fontSize: '20px', color: 'var(--espresso)'}}>
-                <span>AGGREGATE VALUE</span>
-                <span></span>
-                <span>₹{cartTotal}</span>
-              </div>
+        {/* ORDER REGISTRY SECTION */}
+        <section id="history" style={{marginTop: '80px', background: '#fdfaf7', border: '2px dashed var(--crema)', borderRadius: '12px', padding: '40px'}}>
+          <h2 className="section-title" style={{borderLeft: 'none', paddingLeft: 0, textAlign: 'center'}}>Roastery Order Registry</h2>
+          <p style={{textAlign: 'center', opacity: 0.6, marginBottom: '30px'}}>A chronicle of today's artisanal journeys.</p>
+          
+          {allOrders.length === 0 ? (
+            <p style={{textAlign:'center', opacity:0.5, fontStyle:'italic'}}>The registry is currently empty. Begin a journey by selecting a blend.</p>
+          ) : (
+            <div style={{overflowX: 'auto'}}>
+              <table className="registry-table">
+                <thead>
+                  <tr>
+                    <th>Artisan / User</th>
+                    <th>Selected Blends</th>
+                    <th>Time of Entry</th>
+                    <th>Aggregate Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allOrders.map((order, idx) => (
+                    <tr key={idx}>
+                      <td style={{fontWeight: '900', color: 'var(--crema)'}}>{order.username}</td>
+                      <td style={{fontSize: '13px'}}>{order.items}</td>
+                      <td style={{opacity: 0.6}}>{order.timestamp}</td>
+                      <td style={{fontWeight: '900'}}>₹{order.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
-        </div>
+        </section>
 
         <footer style={{textAlign: 'center', padding: '100px 0 60px', borderTop: '1px solid #eee', marginTop: '80px'}}>
           <h3 style={{fontFamily: 'Playfair Display', fontSize: '32px', marginBottom:'15px'}}>The Velvet Bean Roastery</h3>
@@ -635,15 +633,7 @@ const App = () => {
 
 const MenuItem = ({ name, price, img, description, onAdd, onInfo }) => (
   <div className="tile" onClick={() => onInfo({ name, price, img, description })}>
-    <img 
-      src={img} 
-      alt={name} 
-      className="tile-img" 
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600';
-      }}
-    />
+    <img src={img} alt={name} className="tile-img" onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600'; }} />
     <h3 style={{fontSize: '22px', fontWeight: '700', marginTop: '10px'}}>{name}</h3>
     <div className="price-tag">₹{price}</div>
     <div className="btn-add" onClick={(e) => { e.stopPropagation(); onAdd(name, price); }}>Select Blend</div>
